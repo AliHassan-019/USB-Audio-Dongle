@@ -1,6 +1,0 @@
-../source/usb_device_audio.c:23:14:USB_DeviceConfigureEndpointStatus	16	static
-../source/usb_device_audio.c:36:14:USB_DeviceConfigureRemoteWakeup	16	static
-../source/usb_device_audio.c:48:14:USB_DeviceGetClassReceiveBuffer	24	static
-../source/usb_device_audio.c:65:14:USB_DeviceGetSetupBuffer	16	static
-../source/usb_device_audio.c:80:14:USB_DeviceAudioClassRequest	24	static
-../source/usb_device_audio.c:96:6:USB_AudioSpeakerBuffer	16	static
