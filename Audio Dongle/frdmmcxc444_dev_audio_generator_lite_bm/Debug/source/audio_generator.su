@@ -1,0 +1,7 @@
+../source/audio_generator.c:167:13:FillDummyMicData	16	static
+../source/audio_generator.c:183:14:USB_DeviceAudioIsoIn	24	static
+../source/audio_generator.c:207:14:USB_DeviceAudioIsoOutSpeaker	24	static
+../source/audio_generator.c:236:14:USB_DeviceCallback	80	static
+../source/audio_generator.c:367:6:APPInit	8	static
+../source/audio_generator.c:394:5:main	8	static
+../source/audio_generator.c:418:14:USB_DeviceProcessClassRequest	24	static

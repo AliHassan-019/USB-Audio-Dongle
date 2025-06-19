@@ -1,0 +1,7 @@
+C:\Users\aliha\Desktop\Audio Dongle\frdmmcxc444_dev_audio_generator_lite_bm\CMSIS/core_cm0plus.h:757:22:__NVIC_EnableIRQ	16	static
+C:\Users\aliha\Desktop\Audio Dongle\frdmmcxc444_dev_audio_generator_lite_bm\CMSIS/core_cm0plus.h:866:22:__NVIC_SetPriority	24	static
+C:\Users\aliha\Desktop\Audio Dongle\frdmmcxc444_dev_audio_generator_lite_bm\drivers/fsl_common_arm.h:667:24:EnableIRQ	24	static
+../source/hardware_init.c:24:6:BOARD_InitHardware	8	static
+../source/hardware_init.c:31:6:USB0_IRQHandler	8	static
+../source/hardware_init.c:35:6:USB_DeviceClockInit	8	static
+../source/hardware_init.c:40:6:USB_DeviceIsrEnable	16	static

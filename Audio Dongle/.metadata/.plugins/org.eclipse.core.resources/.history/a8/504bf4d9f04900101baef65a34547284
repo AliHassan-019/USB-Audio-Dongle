@@ -1,0 +1,75 @@
+/*
+ * Copyright (c) 2015, Freescale Semiconductor, Inc.
+ * Copyright 2016 NXP
+ * All rights reserved.
+ *
+ * SPDX-License-Identifier: BSD-3-Clause
+ */
+
+#include "usb_device_config.h"
+#include "usb.h"
+#include "usb_device.h"
+
+#if USB_DEVICE_CONFIG_AUDIO
+#include "usb_device_audio.h"
+#include "usb_device_ch9.h"
+#include "usb_device_descriptor.h"
+
+/*!
+ * @brief Dummy implementation of required endpoint configuration function.
+ */
+usb_status_t USB_DeviceConfigureEndpointStatus(usb_device_handle handle, usb_device_endpoint_callback_message_struct_t *message, uint8_t status)
+{
+    // Stub for endpoint stall/un-stall
+    return kStatus_USB_Success;
+}
+
+/*!
+ * @brief Dummy implementation of remote wakeup configuration.
+ */
+usb_status_t USB_DeviceConfigureRemoteWakeup(usb_device_handle handle, uint8_t enable)
+{
+    // Stub for enabling/disabling remote wakeup
+    return kStatus_USB_Success;
+}
+
+/*!
+ * @brief Provides a class receive buffer.
+ */
+usb_status_t USB_DeviceGetClassReceiveBuffer(usb_device_handle handle,
+                                             usb_setup_struct_t *setup,
+                                             uint8_t **buffer,
+                                             uint32_t *length)
+{
+    // You can assign a preallocated buffer here
+    static uint8_t s_ReceiveBuffer[64];
+    *buffer = s_ReceiveBuffer;
+    *length = sizeof(s_ReceiveBuffer);
+    return kStatus_USB_Success;
+}
+
+/*!
+ * @brief Provides a setup buffer for control transfers.
+ */
+usb_status_t USB_DeviceGetSetupBuffer(usb_device_handle handle,
+                                      usb_setup_struct_t **setupBuffer)
+{
+    // Return a static setup buffer
+    static usb_setup_struct_t s_Setup;
+    *setupBuffer = &s_Setup;
+    return kStatus_USB_Success;
+}
+
+/*!
+ * @brief Class-specific request handler stub.
+ */
+usb_status_t USB_DeviceProcessClassRequest(usb_device_handle handle,
+                                           usb_setup_struct_t *setup,
+                                           uint8_t **buffer,
+                                           uint32_t *length)
+{
+    // Handle class-specific requests (volume/mute etc.)
+    return USB_DeviceAudioClassRequest(handle, setup, buffer, length);
+}
+
+#endif /* USB_DEVICE_CONFIG_AUDIO */

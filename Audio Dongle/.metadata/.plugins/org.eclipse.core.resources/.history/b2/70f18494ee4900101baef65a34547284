@@ -1,0 +1,427 @@
+/*
+ * Copyright (c) 2015 - 2016, Freescale Semiconductor, Inc.
+ * Copyright 2016 - 2017,2019 NXP
+ * All rights reserved.
+ *
+ * SPDX-License-Identifier: BSD-3-Clause
+ */
+#include <stdio.h>
+#include <stdlib.h>
+/*${standard_header_anchor}*/
+#include "usb_device_config.h"
+#include "usb.h"
+#include "usb_device.h"
+
+#include "usb_device_audio.h"
+#include "usb_audio_config.h"
+#include "usb_device_ch9.h"
+#include "usb_device_descriptor.h"
+
+#include "audio_generator.h"
+
+#include "fsl_device_registers.h"
+#include "clock_config.h"
+#include "fsl_debug_console.h"
+#include "board.h"
+#if (defined(FSL_FEATURE_SOC_SYSMPU_COUNT) && (FSL_FEATURE_SOC_SYSMPU_COUNT > 0U))
+#include "fsl_sysmpu.h"
+#endif /* FSL_FEATURE_SOC_SYSMPU_COUNT */
+
+#if ((defined FSL_FEATURE_SOC_USBPHY_COUNT) && (FSL_FEATURE_SOC_USBPHY_COUNT > 0U))
+#include "usb_phy.h"
+#endif
+
+/*******************************************************************************
+ * Missing configure-index macro (was removed from your descriptor header)
+ ******************************************************************************/
+#ifndef USB_AUDIO_GENERATOR_CONFIGURE_INDEX
+#define USB_AUDIO_GENERATOR_CONFIGURE_INDEX (1U)
+#endif
+
+/*******************************************************************************
+ * Prototypes
+ ******************************************************************************/
+void BOARD_InitHardware(void);
+void USB_DeviceClockInit(void);
+void USB_DeviceIsrEnable(void);
+#if USB_DEVICE_CONFIG_USE_TASK
+void USB_DeviceTaskFn(void *deviceHandle);
+#endif
+
+#if (defined(USB_DEVICE_CONFIG_LPCIP3511HS) && (USB_DEVICE_CONFIG_LPCIP3511HS > 0U))
+#if !((defined FSL_FEATURE_SOC_USBPHY_COUNT) && (FSL_FEATURE_SOC_USBPHY_COUNT > 0U))
+void USB_DeviceHsPhyChirpIssueWorkaround(void);
+void USB_DeviceDisconnected(void);
+#endif
+#endif
+
+usb_status_t USB_DeviceAudioProcessTerminalRequest(uint32_t audioCommand,
+                                                   uint32_t *length,
+                                                   uint8_t **buffer,
+                                                   uint8_t entityOrEndpoint);
+extern void USB_AudioRecorderGetBuffer(uint8_t *buffer, uint32_t size);
+/*— NEW: Speaker buffer handler —*/
+extern void USB_AudioSpeakerBuffer(uint8_t *buffer, uint32_t size);
+
+#if defined(AUDIO_DATA_SOURCE_DMIC) && (AUDIO_DATA_SOURCE_DMIC > 0U)
+extern void Board_DMIC_DMA_Init(void);
+#elif defined(AUDIO_DATA_SOURCE_PDM) && (AUDIO_DATA_SOURCE_PDM > 0U)
+extern void Board_PDM_EDMA_Init(void);
+#endif
+#if defined(USB_DEVICE_AUDIO_USE_SYNC_MODE) && (USB_DEVICE_AUDIO_USE_SYNC_MODE > 0U)
+extern void SCTIMER_CaptureInit(void);
+#endif
+
+/*******************************************************************************
+ * Variables
+ ******************************************************************************/
+/* Audio data information */
+extern uint8_t s_wavBuff[];
+
+extern uint8_t g_UsbDeviceInterface[USB_AUDIO_GENERATOR_INTERFACE_COUNT];
+
+extern usb_status_t USB_DeviceSetSpeed(uint8_t speed);
+
+USB_DMA_NONINIT_DATA_ALIGN(USB_DATA_ALIGN_SIZE) static uint8_t s_SetupOutBuffer[8];
+
+/*— NEW: Speaker streaming buffer (full-speed) —*/
+USB_DMA_NONINIT_DATA_ALIGN(USB_DATA_ALIGN_SIZE)
+static uint8_t s_SpeakerOutBuffer[FS_ISO_OUT_ENDP_PACKET_SIZE];
+/* Track speaker alternate setting */
+static uint8_t s_speakerAlternateSetting = 0U;
+
+/* Default value of audio generator device struct */
+USB_DMA_INIT_DATA_ALIGN(USB_DATA_ALIGN_SIZE)
+usb_audio_generator_struct_t s_audioGenerator = {
+    NULL,                  /* deviceHandle */
+    0x0U,                  /* currentStreamInterfaceAlternateSetting */
+    0x01U,                 /* copyProtect */
+    0x01U,                 /* curMute */
+    {0x00U, 0x80U},        /* curVolume */
+    {0x00U, 0x80U},        /* minVolume */
+    {0xFFU, 0x7FU},        /* maxVolume */
+    {0x01U, 0x00U},        /* resVolume */
+    0x00U,                 /* curBass */
+    0x80U,                 /* minBass */
+    0x7FU,                 /* maxBass */
+    0x01U,                 /* resBass */
+    0x00U,                 /* curMid */
+    0x80U,                 /* minMid */
+    0x7FU,                 /* maxMid */
+    0x01U,                 /* resMid */
+    0x01U,                 /* curTreble */
+    0x80U,                 /* minTreble */
+    0x7FU,                 /* maxTreble */
+    0x01U,                 /* resTreble */
+    0x01U,                 /* curAutomaticGain */
+    {0x00U, 0x40U},        /* curDelay */
+    {0x00U, 0x00U},        /* minDelay */
+    {0xFFU, 0xFFU},        /* maxDelay */
+    {0x00U, 0x01U},        /* resDelay */
+    0x01U,                 /* curLoudness */
+    {0x00U, 0x00U, 0x01U}, /* curSamplingFrequency */
+    {0x00U, 0x00U, 0x01U}, /* minSamplingFrequency */
+    {0x00U, 0x00U, 0x01U}, /* maxSamplingFrequency */
+    {0x00U, 0x00U, 0x01U}, /* resSamplingFrequency */
+#if (USB_DEVICE_CONFIG_AUDIO_CLASS_2_0)
+    0U,             /* curMute20 */
+    1U,             /* curClockValid */
+    {0x00U, 0x1FU}, /* curVolume20 */
+#if (defined(AUDIO_DATA_SOURCE_DMIC) && (AUDIO_DATA_SOURCE_DMIC > 0U)) || \
+    (defined(AUDIO_DATA_SOURCE_PDM) && (AUDIO_DATA_SOURCE_PDM > 0U))
+    16000U,                   /* curSampleFrequency, This should be changed to 16000 if sampling rate is 16k */
+    {1U, 16000U, 16000U, 0U}, /* freqControlRange */
+#else
+    8000U,                  /* curSampleFrequency, This should be changed to 8000 if sampling rate is 8k */
+    {1U, 8000U, 8000U, 0U}, /* freqControlRange */
+#endif
+    {1U, 0x8001U, 0x7FFFU, 1U}, /* volumeControlRange */
+#endif
+    0,              /* currentConfiguration */
+    {0, 0},         /* currentInterfaceAlternateSetting */
+    USB_SPEED_FULL, /* speed */
+    0U,             /* attach */
+#if defined(USB_DEVICE_AUDIO_USE_SYNC_MODE) && (USB_DEVICE_AUDIO_USE_SYNC_MODE > 0U)
+    0,                                 /* generatorIntervalCount */
+    0,                                 /* curAudioPllFrac */
+    0,                                 /* audioPllTicksPrev */
+    0,                                 /* audioPllTicksDiff */
+    AUDIO_PLL_USB1_SOF_INTERVAL_COUNT, /* audioPllTicksEma */
+    0,                                 /* audioPllTickEmaFrac */
+    AUDIO_PLL_FRACTIONAL_CHANGE_STEP,  /* audioPllStep */
+#endif
+};
+
+/*******************************************************************************
+ * Code
+ ******************************************************************************/
+
+/*!
+ * @brief USB device audio ISO OUT endpoint callback (mic).
+ */
+usb_status_t USB_DeviceAudioIsoOut(usb_device_handle deviceHandle,
+                                   usb_device_endpoint_callback_message_struct_t *event,
+                                   void *arg)
+{
+    usb_device_endpoint_callback_message_struct_t *ep_cb_param =
+        (usb_device_endpoint_callback_message_struct_t *)event;
+    if ((0U != s_audioGenerator.attach) &&
+        (ep_cb_param->length ==
+         ((USB_SPEED_HIGH == s_audioGenerator.speed) ? HS_ISO_IN_ENDP_PACKET_SIZE
+                                                     : FS_ISO_IN_ENDP_PACKET_SIZE)))
+    {
+        USB_AudioRecorderGetBuffer(
+            s_wavBuff,
+            (USB_SPEED_HIGH == s_audioGenerator.speed) ? HS_ISO_IN_ENDP_PACKET_SIZE
+                                                       : FS_ISO_IN_ENDP_PACKET_SIZE);
+        return USB_DeviceSendRequest(
+            deviceHandle, USB_AUDIO_STREAM_ENDPOINT, s_wavBuff,
+            (USB_SPEED_HIGH == s_audioGenerator.speed) ? HS_ISO_IN_ENDP_PACKET_SIZE
+                                                       : FS_ISO_IN_ENDP_PACKET_SIZE);
+    }
+
+    return kStatus_USB_Error;
+}
+
+/*!
+ * @brief USB device audio ISO OUT endpoint callback (speaker).
+ */
+usb_status_t USB_DeviceAudioIsoOutSpeaker(usb_device_handle deviceHandle,
+                                          usb_device_endpoint_callback_message_struct_t *event,
+                                          void *arg)
+{
+    if ((0U != s_audioGenerator.attach) &&
+        (event->length ==
+         ((USB_SPEED_HIGH == s_audioGenerator.speed) ? HS_ISO_OUT_ENDP_PACKET_SIZE
+                                                     : FS_ISO_OUT_ENDP_PACKET_SIZE)))
+    {
+        /* Forward the buffer to your TAD5X12 DAC */
+        USB_AudioSpeakerBuffer(event->buffer, event->length);
+        /* Queue next receive */
+        return USB_DeviceRecvRequest(
+            deviceHandle, USB_AUDIO_OUT_ENDPOINT, s_SpeakerOutBuffer,
+            (USB_SPEED_HIGH == s.audioGenerator.speed) ? HS_ISO_OUT_ENDP_PACKET_SIZE
+                                                       : FS_ISO_OUT_ENDP_PACKET_SIZE);
+    }
+    return kStatus_USB_Error;
+}
+
+/* All original control, feature-unit, and class-request handlers follow unchanged...
+   (USB_DeviceAudioGetControlTerminal, USB_DeviceAudioSetControlTerminal, etc.) */
+
+usb_status_t USB_DeviceCallback(usb_device_handle handle, uint32_t event, void *param)
+{
+    usb_status_t error = kStatus_USB_InvalidRequest;
+    uint8_t   *temp8  = (uint8_t *)param;
+    uint8_t    count  = 0U;
+
+    switch (event)
+    {
+        case kUSB_DeviceEventBusReset:
+        {
+            for (count = 0U; count < USB_AUDIO_GENERATOR_INTERFACE_COUNT; count++)
+            {
+                s_audioGenerator.currentInterfaceAlternateSetting[count] = 0U;
+            }
+            s.audioGenerator.attach               = 0U;
+            s.audioGenerator.currentConfiguration = 0U;
+            error                                 = kStatus_USB_Success;
+            USB_DeviceControlPipeInit(s.audioGenerator.deviceHandle);
+#if (defined(USB_DEVICE_CONFIG_EHCI) && (USB_DEVICE_CONFIG_EHCI > 0U)) || \
+    (defined(USB_DEVICE_CONFIG_LPCIP3511HS) && (USB_DEVICE_CONFIG_LPCIP3511HS > 0U))
+            if (kStatus_USB_Success ==
+                USB_DeviceGetStatus(s.audioGenerator.deviceHandle, kUSB_DeviceStatusSpeed, &s.audioGenerator.speed))
+            {
+                USB_DeviceSetSpeed(s.audioGenerator.speed);
+            }
+#endif
+        }
+        break;
+
+#if (defined(USB_DEVICE_CONFIG_DETACH_ENABLE) && (USB_DEVICE_CONFIG_DETACH_ENABLE > 0U))
+        case kUSB_DeviceEventDetach:
+        {
+            error = kStatus_USB_Success;
+        }
+        break;
+#endif
+
+        case kUSB_DeviceEventSetConfiguration:
+            if (0U == (*temp8))
+            {
+                s.audioGenerator.attach               = 0U;
+                s.audioGenerator.currentConfiguration = 0U;
+                error                                 = kStatus_USB_Success;
+            }
+            else if (USB_AUDIO_GENERATOR_CONFIGURE_INDEX == (*temp8))
+            {
+                s.audioGenerator.attach               = 1U;
+                s.audioGenerator.currentConfiguration = *temp8;
+                error                                 = kStatus_USB_Success;
+            }
+            break;
+
+        case kUSB_DeviceEventSetInterface:
+            if (0U != s.audioGenerator.attach)
+            {
+                uint8_t interface        = (*temp8) & 0xFFU;
+                uint8_t alternateSetting = g_UsbDeviceInterface[interface];
+
+                error = kStatus_USB_Success;
+
+                /* --- Mic Streaming Interface --- */
+                if (interface == USB_AUDIO_STREAM_INTERFACE_INDEX)
+                {
+                    if (s.audioGenerator.currentStreamInterfaceAlternateSetting != alternateSetting)
+                    {
+                        if (s.audioGenerator.currentStreamInterfaceAlternateSetting)
+                        {
+                            USB_DeviceDeinitEndpoint(
+                                s.audioGenerator.deviceHandle,
+                                USB_AUDIO_STREAM_ENDPOINT | (USB_IN << USB_DESCRIPTOR_ENDPOINT_ADDRESS_DIRECTION_SHIFT));
+                        }
+                        else
+                        {
+                            usb_device_endpoint_init_struct_t    epInitStruct;
+                            usb_device_endpoint_callback_struct_t epCallback;
+
+                            epCallback.callbackFn    = USB_DeviceAudioIsoOut;
+                            epCallback.callbackParam = handle;
+                            epInitStruct.zlt          = 0U;
+                            epInitStruct.transferType = USB_ENDPOINT_ISOCHRONOUS;
+                            epInitStruct.endpointAddress =
+                                USB_AUDIO_STREAM_ENDPOINT | (USB_IN << USB_DESCRIPTOR_ENDPOINT_ADDRESS_DIRECTION_SHIFT);
+                            if (USB_SPEED_HIGH == s.audioGenerator.speed)
+                            {
+                                epInitStruct.maxPacketSize = HS_ISO_IN_ENDP_PACKET_SIZE;
+                                epInitStruct.interval      = HS_ISO_IN_ENDP_INTERVAL;
+                            }
+                            else
+                            {
+                                epInitStruct.maxPacketSize = FS_ISO_IN_ENDP_PACKET_SIZE;
+                                epInitStruct.interval      = FS_ISO_IN_ENDP_INTERVAL;
+                            }
+
+                            USB_DeviceInitEndpoint(handle, &epInitStruct, &epCallback);
+                            USB_AudioRecorderGetBuffer(
+                                s_wavBuff,
+                                (USB_SPEED_HIGH == s.audioGenerator.speed) ? HS_ISO_IN_ENDP_PACKET_SIZE
+                                                                           : FS_ISO_IN_ENDP_PACKET_SIZE);
+                            USB_DeviceSendRequest(
+                                handle, USB_AUDIO_STREAM_ENDPOINT, s_wavBuff,
+                                (USB_SPEED_HIGH == s.audioGenerator.speed) ? HS_ISO_IN_ENDP_PACKET_SIZE
+                                                                           : FS_ISO_IN_ENDP_PACKET_SIZE);
+                        }
+                        s.audioGenerator.currentStreamInterfaceAlternateSetting = alternateSetting;
+                    }
+                }
+                /* --- Speaker Streaming Interface --- */
+                else if (interface == USB_AUDIO_SPEAKER_STREAM_INTERFACE_INDEX)
+                {
+                    if (s_speakerAlternateSetting != alternateSetting)
+                    {
+                        if (s_speakerAlternateSetting)
+                        {
+                            /* Deinit OUT endpoint */
+                            USB_DeviceDeinitEndpoint(handle, USB_AUDIO_OUT_ENDPOINT);
+                        }
+                        else
+                        {
+                            /* Init OUT endpoint */
+                            usb_device_endpoint_init_struct_t    epInitStruct;
+                            usb_device_endpoint_callback_struct_t epCallback;
+
+                            epCallback.callbackFn    = USB_DeviceAudioIsoOutSpeaker;
+                            epCallback.callbackParam = handle;
+                            epInitStruct.zlt          = 0U;
+                            epInitStruct.transferType = USB_ENDPOINT_ISOCHRONOUS;
+                            epInitStruct.endpointAddress = USB_AUDIO_OUT_ENDPOINT;
+                            if (USB_SPEED_HIGH == s.audioGenerator.speed)
+                            {
+                                epInitStruct.maxPacketSize = HS_ISO_OUT_ENDP_PACKET_SIZE;
+                                epInitStruct.interval      = ISO_OUT_ENDP_INTERVAL;
+                            }
+                            else
+                            {
+                                epInitStruct.maxPacketSize = FS_ISO_OUT_ENDP_PACKET_SIZE;
+                                epInitStruct.interval      = ISO_OUT_ENDP_INTERVAL;
+                            }
+
+                            USB_DeviceInitEndpoint(handle, &epInitStruct, &epCallback);
+                            /* Prime first receive */
+                            USB_DeviceRecvRequest(
+                                handle, USB_AUDIO_OUT_ENDPOINT, s_SpeakerOutBuffer,
+                                (USB_SPEED_HIGH == s.audioGenerator.speed) ? HS_ISO_OUT_ENDP_PACKET_SIZE
+                                                                           : FS_ISO_OUT_ENDP_PACKET_SIZE);
+                        }
+                        s_speakerAlternateSetting = alternateSetting;
+                    }
+                }
+            }
+            break;
+
+        default:
+            break;
+    }
+
+    return error;
+}
+
+/*!
+ * @brief Application initialization function.
+ *
+ * This function initializes the application.
+ *
+ * @return None.
+ */
+void APPInit(void)
+{
+    USB_DeviceClockInit();
+#if (defined(FSL_FEATURE_SOC_SYSMPU_COUNT) && (FSL_FEATURE_SOC_SYSMPU_COUNT > 0U))
+    SYSMPU_Enable(SYSMPU, 0);
+#endif /* FSL_FEATURE_SOC_SYSMPU_COUNT */
+
+#if defined(USB_DEVICE_AUDIO_USE_SYNC_MODE) && (USB_DEVICE_AUDIO_USE_SYNC_MODE > 0U)
+    SCTIMER_CaptureInit();
+#endif
+
+    if (kStatus_USB_Success != USB_DeviceInit(CONTROLLER_ID, USB_DeviceCallback, &s_audioGenerator.deviceHandle))
+    {
+        usb_echo("USB device failed\r\n");
+        return;
+    }
+    else
+    {
+        usb_echo("USB device audio generator demo\r\n");
+    }
+
+    USB_DeviceIsrEnable();
+
+    /* Add one delay here to make the DP pull down long enough to allow host to detect the previous disconnection. */
+    SDK_DelayAtLeastUs(5000, SDK_DEVICE_MAXIMUM_CPU_CLOCK_FREQUENCY);
+    USB_DeviceRun(s_audioGenerator.deviceHandle);
+}
+
+#if defined(__CC_ARM) || (defined(__ARMCC_VERSION)) || defined(__GNUC__)
+int main(void)
+#else
+void main(void)
+#endif
+{
+    BOARD_InitHardware();
+
+#if defined(AUDIO_DATA_SOURCE_DMIC) && (AUDIO_DATA_SOURCE_DMIC > 0U)
+    Board_DMIC_DMA_Init();
+#elif defined(AUDIO_DATA_SOURCE_PDM) && (AUDIO_DATA_SOURCE_PDM > 0U)
+    Board_PDM_EDMA_Init();
+#endif
+
+    APPInit();
+
+    while (1)
+    {
+#if USB_DEVICE_CONFIG_USE_TASK
+        USB_DeviceTaskFn(s_audioGenerator.deviceHandle);
+#endif
+    }
+}

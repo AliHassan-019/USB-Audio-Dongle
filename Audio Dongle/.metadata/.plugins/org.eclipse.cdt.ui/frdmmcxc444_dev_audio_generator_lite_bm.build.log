@@ -1,0 +1,85 @@
+19:44:28 **** Incremental Build of configuration Debug for project frdmmcxc444_dev_audio_generator_lite_bm ****
+make -r -j8 all 
+Building file: ../source/audio_generator.c
+Invoking: MCU C Compiler
+arm-none-eabi-gcc -std=gnu99 -D__REDLIB__ -DCPU_MCXC444VLH -DCPU_MCXC444VLH_cm0plus -DMCUXPRESSO_SDK -DUSB_STACK_BM -DSDK_DEBUGCONSOLE=1 -DMCUX_META_BUILD -DOSA_USED -DUSE_RTOS=0 -DCR_INTEGER_PRINTF -DPRINTF_FLOAT_ENABLE=0 -D__MCUXPRESSO -D__USE_CMSIS -DDEBUG -I"C:\Users\aliha\Desktop\MCU Xpresso\frdmmcxc444_dev_audio_generator_lite_bm\source" -I"C:\Users\aliha\Desktop\MCU Xpresso\frdmmcxc444_dev_audio_generator_lite_bm\drivers" -I"C:\Users\aliha\Desktop\MCU Xpresso\frdmmcxc444_dev_audio_generator_lite_bm\CMSIS" -I"C:\Users\aliha\Desktop\MCU Xpresso\frdmmcxc444_dev_audio_generator_lite_bm\CMSIS\m-profile" -I"C:\Users\aliha\Desktop\MCU Xpresso\frdmmcxc444_dev_audio_generator_lite_bm\device" -I"C:\Users\aliha\Desktop\MCU Xpresso\frdmmcxc444_dev_audio_generator_lite_bm\device\periph2" -I"C:\Users\aliha\Desktop\MCU Xpresso\frdmmcxc444_dev_audio_generator_lite_bm\utilities" -I"C:\Users\aliha\Desktop\MCU Xpresso\frdmmcxc444_dev_audio_generator_lite_bm\component\lists" -I"C:\Users\aliha\Desktop\MCU Xpresso\frdmmcxc444_dev_audio_generator_lite_bm\utilities\str" -I"C:\Users\aliha\Desktop\MCU Xpresso\frdmmcxc444_dev_audio_generator_lite_bm\utilities\debug_console_lite" -I"C:\Users\aliha\Desktop\MCU Xpresso\frdmmcxc444_dev_audio_generator_lite_bm\component\uart" -I"C:\Users\aliha\Desktop\MCU Xpresso\frdmmcxc444_dev_audio_generator_lite_bm\component\osa\config" -I"C:\Users\aliha\Desktop\MCU Xpresso\frdmmcxc444_dev_audio_generator_lite_bm\component\osa" -I"C:\Users\aliha\Desktop\MCU Xpresso\frdmmcxc444_dev_audio_generator_lite_bm\usb\include" -I"C:\Users\aliha\Desktop\MCU Xpresso\frdmmcxc444_dev_audio_generator_lite_bm\usb\device" -I"C:\Users\aliha\Desktop\MCU Xpresso\frdmmcxc444_dev_audio_generator_lite_bm\board" -I"C:\Users\aliha\Desktop\MCU Xpresso\frdmmcxc444_dev_audio_generator_lite_bm\source\config\device\khci" -O0 -fno-common -g3 -gdwarf-4 -c -ffunction-sections -fdata-sections -fno-builtin -imacros "C:\Users\aliha\Desktop\MCU Xpresso\frdmmcxc444_dev_audio_generator_lite_bm\source\mcux_config.h" -fmerge-constants -fmacro-prefix-map="../source/"= -mcpu=cortex-m0plus -mthumb -D__REDLIB__ -fstack-usage -specs=redlib.specs -MMD -MP -MF"source/audio_generator.d" -MT"source/audio_generator.o" -MT"source/audio_generator.d" -o "source/audio_generator.o" "../source/audio_generator.c"
+In file included from ../source/audio_generator.c:18:
+../source/usb_device_descriptor.h:88: warning: "USB_AUDIO_SPEAKER_STREAM_INTERFACE_INDEX" redefined
+   88 | #define USB_AUDIO_SPEAKER_STREAM_INTERFACE_INDEX (2U)  /* speaker OUT */
+      | 
+In file included from ../source/audio_generator.c:16:
+../source/usb_audio_config.h:24: note: this is the location of the previous definition
+   24 | #define USB_AUDIO_SPEAKER_STREAM_INTERFACE_INDEX       0x02U
+      | 
+../source/usb_device_descriptor.h:94: warning: "USB_AUDIO_SPEAKER_STREAM_INTERFACE_ALTERNATE_0" redefined
+   94 | #define USB_AUDIO_SPEAKER_STREAM_INTERFACE_ALTERNATE_0    (0U)
+      | 
+../source/usb_audio_config.h:25: note: this is the location of the previous definition
+   25 | #define USB_AUDIO_SPEAKER_STREAM_INTERFACE_ALTERNATE_0 0U
+      | 
+../source/usb_device_descriptor.h:95: warning: "USB_AUDIO_SPEAKER_STREAM_INTERFACE_ALTERNATE_1" redefined
+   95 | #define USB_AUDIO_SPEAKER_STREAM_INTERFACE_ALTERNATE_1    (1U)
+      | 
+../source/usb_audio_config.h:26: note: this is the location of the previous definition
+   26 | #define USB_AUDIO_SPEAKER_STREAM_INTERFACE_ALTERNATE_1 1U
+      | 
+../source/usb_device_descriptor.h:107: warning: "USB_AUDIO_OUT_ENDPOINT" redefined
+  107 | #define USB_AUDIO_OUT_ENDPOINT     (3U)  /* speaker OUT endpoint */
+      | 
+../source/usb_audio_config.h:29: note: this is the location of the previous definition
+   29 | #define USB_AUDIO_OUT_ENDPOINT                        0x01U
+      | 
+../source/usb_device_descriptor.h:123: warning: "HS_ISO_OUT_ENDP_PACKET_SIZE" redefined
+  123 | #define HS_ISO_OUT_ENDP_PACKET_SIZE HS_ISO_IN_ENDP_PACKET_SIZE
+      | 
+../source/usb_audio_config.h:31: note: this is the location of the previous definition
+   31 | #define HS_ISO_OUT_ENDP_PACKET_SIZE                   (FS_ISO_OUT_ENDP_PACKET_SIZE * 8U)
+      | 
+../source/usb_device_descriptor.h:124: warning: "FS_ISO_OUT_ENDP_PACKET_SIZE" redefined
+  124 | #define FS_ISO_OUT_ENDP_PACKET_SIZE FS_ISO_IN_ENDP_PACKET_SIZE
+      | 
+../source/usb_audio_config.h:30: note: this is the location of the previous definition
+   30 | #define FS_ISO_OUT_ENDP_PACKET_SIZE                   (192U)   /* e.g. 48kHz × 2ch × 2 bytes */
+      | 
+../source/usb_device_descriptor.h:125: warning: "ISO_OUT_ENDP_INTERVAL" redefined
+  125 | #define ISO_OUT_ENDP_INTERVAL       (0x01U)
+      | 
+../source/usb_audio_config.h:32: note: this is the location of the previous definition
+   32 | #define ISO_OUT_ENDP_INTERVAL                         1U
+      | 
+../source/usb_device_descriptor.h:152: warning: "USB_AUDIO_SPEAKER_CONTROL_INPUT_TERMINAL_ID" redefined
+  152 | #define USB_AUDIO_SPEAKER_CONTROL_INPUT_TERMINAL_ID  (0x04U)
+      | 
+../source/usb_audio_config.h:19: note: this is the location of the previous definition
+   19 | #define USB_AUDIO_SPEAKER_CONTROL_INPUT_TERMINAL_ID   0x05U
+      | 
+../source/usb_device_descriptor.h:153: warning: "USB_AUDIO_SPEAKER_CONTROL_FEATURE_UNIT_ID" redefined
+  153 | #define USB_AUDIO_SPEAKER_CONTROL_FEATURE_UNIT_ID    (0x05U)
+      | 
+../source/usb_audio_config.h:20: note: this is the location of the previous definition
+   20 | #define USB_AUDIO_SPEAKER_CONTROL_FEATURE_UNIT_ID     0x06U
+      | 
+../source/usb_device_descriptor.h:154: warning: "USB_AUDIO_SPEAKER_CONTROL_OUTPUT_TERMINAL_ID" redefined
+  154 | #define USB_AUDIO_SPEAKER_CONTROL_OUTPUT_TERMINAL_ID (0x06U)
+      | 
+../source/usb_audio_config.h:21: note: this is the location of the previous definition
+   21 | #define USB_AUDIO_SPEAKER_CONTROL_OUTPUT_TERMINAL_ID  0x07U
+      | 
+Finished building: ../source/audio_generator.c
+ 
+Building target: frdmmcxc444_dev_audio_generator_lite_bm.axf
+Invoking: MCU Linker
+arm-none-eabi-gcc -nostdlib -Xlinker -no-warn-rwx-segments -Xlinker -Map="frdmmcxc444_dev_audio_generator_lite_bm.map" -Xlinker --gc-sections -Xlinker -print-memory-usage -Xlinker --sort-section=alignment -Xlinker --cref -mcpu=cortex-m0plus -mthumb -T frdmmcxc444_dev_audio_generator_lite_bm_Debug.ld -o "frdmmcxc444_dev_audio_generator_lite_bm.axf" ./utilities/str/fsl_str.o  ./utilities/debug_console_lite/fsl_debug_console.o  ./utilities/fsl_assert.o  ./usb/device/usb_device_dci.o ./usb/device/usb_device_khci.o  ./startup/startup_mcxc444.o  ./source/audio_data.o ./source/audio_generator.o ./source/hardware_init.o ./source/mtb.o ./source/pin_mux.o ./source/semihost_hardfault.o ./source/usb_device_audio.o ./source/usb_device_ch9.o ./source/usb_device_descriptor.o  ./drivers/fsl_clock.o ./drivers/fsl_common.o ./drivers/fsl_common_arm.o ./drivers/fsl_gpio.o ./drivers/fsl_lpuart.o ./drivers/fsl_smc.o ./drivers/fsl_uart.o  ./device/system_MCXC444.o  ./component/uart/fsl_adapter_lpuart.o  ./component/osa/fsl_os_abstraction_bm.o  ./component/lists/fsl_component_generic_list.o  ./board/board.o ./board/clock_config.o   
+Memory region         Used Size  Region Size  %age Used
+   PROGRAM_FLASH:       28184 B       256 KB     10.75%
+            SRAM:       14492 B        32 KB     44.23%
+Finished building target: frdmmcxc444_dev_audio_generator_lite_bm.axf
+ 
+Performing post-build steps
+arm-none-eabi-size "frdmmcxc444_dev_audio_generator_lite_bm.axf"; # arm-none-eabi-objcopy -v -O binary "frdmmcxc444_dev_audio_generator_lite_bm.axf" "frdmmcxc444_dev_audio_generator_lite_bm.bin" ; # checksum -p MCXC444 -d "frdmmcxc444_dev_audio_generator_lite_bm.bin";
+   text	   data	    bss	    dec	    hex	filename
+  27764	    420	  13596	  41780	   a334	frdmmcxc444_dev_audio_generator_lite_bm.axf
+ 
+
+19:44:30 Build Finished. 0 errors, 10 warnings. (took 2s.213ms)
+

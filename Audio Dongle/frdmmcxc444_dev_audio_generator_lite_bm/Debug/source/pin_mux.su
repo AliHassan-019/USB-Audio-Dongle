@@ -1,0 +1,4 @@
+C:\Users\aliha\Desktop\Audio Dongle\frdmmcxc444_dev_audio_generator_lite_bm\drivers/fsl_clock.h:437:20:CLOCK_EnableClock	24	static
+C:\Users\aliha\Desktop\Audio Dongle\frdmmcxc444_dev_audio_generator_lite_bm\drivers/fsl_port.h:463:20:PORT_SetPinMux	24	static
+../source/pin_mux.c:36:6:BOARD_InitBootPins	8	static
+../source/pin_mux.c:59:6:BOARD_InitPins	8	static
