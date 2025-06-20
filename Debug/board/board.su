@@ -1,2 +1,0 @@
-C:\Users\Artak\Documents\MCUXpressoIDE_24.12.148\workspace\USB Dongle_dev_audio_generator_lite_bm\drivers/fsl_clock.h:469:20:CLOCK_SetLpuart0Clock	16	static
-../board/board.c:25:6:BOARD_InitDebugConsole	16	static
