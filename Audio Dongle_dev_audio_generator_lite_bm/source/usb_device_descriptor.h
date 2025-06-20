@@ -9,6 +9,8 @@
 #ifndef __USB_DEVICE_DESCRIPTOR_H__
 #define __USB_DEVICE_DESCRIPTOR_H__
 
+#include "usb_device.h"
+
 /*******************************************************************************
  * Definitions
  ******************************************************************************/
@@ -144,15 +146,12 @@
 
 /* Alias so the example’s USB_AUDIO_STREAM_OUT_EP compiles */
 #ifndef USB_AUDIO_STREAM_OUT_EP
-#define USB_AUDIO_STREAM_OUT_EP      USB_AUDIO_STREAM_ENDPOINT
+#define USB_AUDIO_STREAM_OUT_EP (USB_AUDIO_STREAM_ENDPOINT | (USB_OUT << 7))
 #endif
 
 /* Some older SDKs never defined these class-request events */
 #ifndef kUSB_DeviceEventClassRequest
 #define kUSB_DeviceEventClassRequest         kUSB_DeviceEventVendorRequest
-#endif
-#ifndef kUSB_DeviceEventClassRequestComplete
-#define kUSB_DeviceEventClassRequestComplete kUSB_DeviceEventVendorRequestComplete
 #endif
 
 /*******************************************************************************

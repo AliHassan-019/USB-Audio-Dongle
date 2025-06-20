@@ -261,7 +261,7 @@ uint32_t audioPosition = 0U;
  *
  * This function prepare audio wav data before send.
  */
-void USB_AudioRecorderGetBuffer(uint8_t *buffer, uint32_t size)
+void USB_AudioTestDataGetBuffer(uint8_t *buffer, uint32_t size)
 {
     uint8_t k;
     /* copy audio wav data from flash to buffer */

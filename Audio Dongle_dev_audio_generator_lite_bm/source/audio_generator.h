@@ -8,8 +8,11 @@
 #ifndef __USB_AUDIO_GENERATOR_H__
 #define __USB_AUDIO_GENERATOR_H__ 1
 
-/* bring in the control-range structs (layout2/layout3) */
+#include "usb_device_descriptor.h"
+#include "usb_device_config.h"
+#include "usb_device.h"              // <— for usb_device_handle
 #include "usb_device_audio.h"
+#include "usb_audio_config.h"
 /*******************************************************************************
  * Definitions
  ******************************************************************************/

@@ -9,9 +9,9 @@
 #include <stdlib.h>
 #include <stdint.h>
 #include <string.h>
-#include "usb_audio_config.h"
+#include "usb_device_config.h"        // <<-- first!
 #include "usb_device_audio.h"
-#include "usb_device_config.h"
+#include "usb_audio_config.h"
 #include "audio_generator.h"
 #include "board.h"
 #include "fsl_device_registers.h"
@@ -96,7 +96,7 @@ usb_audio_generator_struct_t s_audioGenerator = {
     // Add any additional fields required by your SDK version here
 };
 
-uint8_t g_UsbDeviceInterface[USB_AUDIO_GENERATOR_INTERFACE_COUNT] = { 0 };
+extern uint8_t g_UsbDeviceInterface[USB_AUDIO_GENERATOR_INTERFACE_COUNT];
 
 /*******************************************************************************
  * Definitions
@@ -1572,7 +1572,7 @@ usb_status_t USB_DeviceCallback(usb_device_handle handle, uint32_t event, void *
                     usb_device_endpoint_init_struct_t epInitStruct;
                     usb_device_endpoint_callback_struct_t epCallback;
 
-                    epCallback.callbackFn = USB_DeviceAudioIsoOut;
+                    epCallback.callbackFn = USB_AudioSpeakerIsoOut;
                     epCallback.callbackParam = handle;
 
                     epInitStruct.zlt = 0U;
@@ -1602,21 +1602,13 @@ usb_status_t USB_DeviceCallback(usb_device_handle handle, uint32_t event, void *
         break;
     case kUSB_DeviceEventClassRequest:
     {
-        /* param is actually a usb_device_control_request_struct_t in this SDK */
-        usb_device_control_request_struct_t *clsReq =
-            (usb_device_control_request_struct_t *)param;
-        error = USB_DeviceProcessClassRequest(
-            handle,
-            clsReq->setup,
-            &clsReq->length,
-            &clsReq->buffer);
+        usb_setup_struct_t *setupRequest = (usb_setup_struct_t *)param;
+        uint32_t length = 0;
+        uint8_t *buffer = NULL;
+        
+        error = USB_DeviceProcessClassRequest(handle, setupRequest, &length, &buffer);
     }
     break;
-
-    case kUSB_DeviceEventClassRequestComplete:
-        /* if you need to do anything after the data/stage, do it here */
-        error = kStatus_USB_Success;
-        break;
 
     default:
         break;
