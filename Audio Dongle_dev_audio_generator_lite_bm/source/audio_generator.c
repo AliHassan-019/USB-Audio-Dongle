@@ -1602,8 +1602,9 @@ usb_status_t USB_DeviceCallback(usb_device_handle handle, uint32_t event, void *
         break;
     case kUSB_DeviceEventClassRequest:
     {
-        /* param is a pointer to usb_device_event_struct_t */
-        usb_device_event_struct_t *clsReq = (usb_device_event_struct_t *)param;
+        /* param is actually a usb_device_control_request_struct_t in this SDK */
+        usb_device_control_request_struct_t *clsReq =
+            (usb_device_control_request_struct_t *)param;
         error = USB_DeviceProcessClassRequest(
             handle,
             clsReq->setup,

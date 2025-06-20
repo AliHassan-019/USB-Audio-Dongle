@@ -126,6 +126,35 @@
 #define USB_AUDIO_RECORDER_CONTROL_FEATURE_UNIT_ID    (0x02U)
 #define USB_AUDIO_RECORDER_CONTROL_OUTPUT_TERMINAL_ID (0x03U)
 
+/* ============================================================================
+   Compatibility for OUT endpoints and class‐request events
+   (this SDK only defines the IN versions by default)
+   ============================================================================ */
+
+/* Mirror the IN endpoint sizes/intervals for OUT */
+#ifndef FS_ISO_OUT_ENDP_PACKET_SIZE
+#define FS_ISO_OUT_ENDP_PACKET_SIZE  FS_ISO_IN_ENDP_PACKET_SIZE
+#endif
+#ifndef FS_ISO_OUT_ENDP_INTERVAL
+#define FS_ISO_OUT_ENDP_INTERVAL     FS_ISO_IN_ENDP_INTERVAL
+#endif
+#ifndef ISO_OUT_ENDP_INTERVAL
+#define ISO_OUT_ENDP_INTERVAL        ISO_IN_ENDP_INTERVAL
+#endif
+
+/* Alias so the example’s USB_AUDIO_STREAM_OUT_EP compiles */
+#ifndef USB_AUDIO_STREAM_OUT_EP
+#define USB_AUDIO_STREAM_OUT_EP      USB_AUDIO_STREAM_ENDPOINT
+#endif
+
+/* Some older SDKs never defined these class-request events */
+#ifndef kUSB_DeviceEventClassRequest
+#define kUSB_DeviceEventClassRequest         kUSB_DeviceEventVendorRequest
+#endif
+#ifndef kUSB_DeviceEventClassRequestComplete
+#define kUSB_DeviceEventClassRequestComplete kUSB_DeviceEventVendorRequestComplete
+#endif
+
 /*******************************************************************************
  * API
  ******************************************************************************/
